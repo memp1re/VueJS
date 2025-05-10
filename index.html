@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vue.js Практика</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <h1>Практическая работа по Vue.js</h1>
+    
+    <!-- Блок вывода данных -->
+    <div class="demo-block">
+      <p>{{ message }}</p>
+    </div>
+    
+    <!-- Блок обработки событий с полем для сообщения -->
+    <div class="demo-block">
+      <textarea v-model="userMessage" placeholder="Введите ваше сообщение"></textarea>
+      <button @click="updateMessage">Обновить сообщение</button>
+    </div>
+    
+    <!-- Блок работы с циклами -->
+    <div class="demo-block">
+      <ul class="task-list">
+        <li v-for="(task, index) in tasks" :key="index">
+          {{ index + 1 }}. {{ task }}
+        </li>
+      </ul>
+      <input v-model="newTask" placeholder="Новая задача" @keyup.enter="addTask">
+      <button @click="addTask">Добавить задачу</button>
+    </div>
+    
+    <!-- Блок условного рендеринга -->
+    <div class="demo-block">
+      <div class="toggle-container">
+        <button @click="toggleVisibility">
+          {{ isVisible ? 'Скрыть текст' : 'Показать текст' }}
+        </button>
+        <p v-if="isVisible">Этот текст можно скрыть или показать</p>
+      </div>
+    </div>
+    
+    <!-- Форма с полями -->
+    <div class="form-container">
+      <form @submit.prevent="submitForm">
+        <div class="form-group">
+          <label for="name">Имя:</label>
+          <input 
+            id="name" 
+            type="text" 
+            v-model.trim="form.name" 
+            @blur="validateField('name')"
+            :class="{ 'error-border': errors.name }"
+          >
+          <span class="error" v-if="errors.name">{{ errors.name }}</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input 
+            id="email" 
+            type="email" 
+            v-model.trim="form.email" 
+            @blur="validateField('email')"
+            :class="{ 'error-border': errors.email }"
+          >
+          <span class="error" v-if="errors.email">{{ errors.email }}</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="message">Сообщение:</label>
+          <textarea 
+            id="message" 
+            v-model.trim="form.message" 
+            @blur="validateField('message')"
+            :class="{ 'error-border': errors.message }"
+          ></textarea>
+          <span class="error" v-if="errors.message">{{ errors.message }}</span>
+        </div>
+        
+        <div class="form-group">
+          <label>
+            <input type="checkbox" v-model="form.agree">
+            Я согласен на обработку персональных данных
+          </label>
+          <span class="error" v-if="errors.agree">{{ errors.agree }}</span>
+        </div>
+
+        <button type="submit" :disabled="isSubmitting">
+          {{ isSubmitting ? 'Отправка...' : 'Отправить' }}
+        </button>
+      </form>
+      
+      <div class="result" v-if="isSubmitted">
+        <h3>Данные формы успешно отправлены!</h3>
+        <p><strong>Имя:</strong> {{ form.name }}</p>
+        <p><strong>Email:</strong> {{ form.email }}</p>
+        <p><strong>Сообщение:</strong> {{ form.message }}</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script>
+    const { createApp } = Vue;
+    
+    createApp({
+      data() {
+        return {
+          // Пример
+          message: 'Привет, Vue.js!',
+          userMessage: '',
+          tasks: ['Изучить Vue.js', 'Создать проект', 'Сдать практическую работу'],
+          newTask: '',
+          isVisible: true,
+          
+          // Данные формы
+          form: {
+            name: '',
+            email: '',
+            message: '',
+            agree: false
+          },
+          errors: {
+            name: '',
+            email: '',
+            message: '',
+            agree: ''
+          },
+          isSubmitting: false,
+          isSubmitted: false
+        };
+      },
+      methods: {
+        // Обновление сообщения из текстового поля
+        updateMessage() {
+          if (this.userMessage.trim()) {
+            this.message = this.userMessage;
+            this.userMessage = '';
+          }
+        },
+        
+        // Методы для списка задач
+        addTask() {
+          if (this.newTask.trim()) {
+            this.tasks.push(this.newTask.trim());
+            this.newTask = '';
+          }
+        },
+        
+        // Переключение видимости
+        toggleVisibility() {
+          this.isVisible = !this.isVisible;
+        },
+        
+        // Методы для формы
+        validateField(field) {
+          if (field === 'name') {
+            this.errors.name = this.form.name.length < 2 ? 'Имя должно содержать минимум 2 символа' : '';
+          }
+          
+          if (field === 'email') {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            this.errors.email = !emailRegex.test(this.form.email) ? 'Введите корректный email' : '';
+          }
+          
+          if (field === 'message') {
+            this.errors.message = this.form.message.length < 10 ? 'Сообщение должно содержать минимум 10 символов' : '';
+          }
+        },
+        
+        validateForm() {
+          this.validateField('name');
+          this.validateField('email');
+          this.validateField('message');
+          
+          if (!this.form.agree) {
+            this.errors.agree = 'Необходимо дать согласие';
+          } else {
+            this.errors.agree = '';
+          }
+          
+          return !Object.values(this.errors).some(error => error !== '');
+        },
+        
+        submitForm() {
+          if (!this.validateForm()) return;
+          
+          this.isSubmitting = true;
+          
+          // Имитация отправки на сервер
+          setTimeout(() => {
+            this.isSubmitting = false;
+            this.isSubmitted = true;
+          }, 1500);
+        }
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
